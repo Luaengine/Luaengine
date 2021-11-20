@@ -1,5 +1,6 @@
 scrupp.PLATFORM="Linux"
 if type(io.popen([[tree ]]..scrupp.getSearchPath()[1]):lines()()or nil)=="string"then scrupp.PLATFORM="Windows"end
+scrupp.init(scrupp.getSearchPath()[1],1000,750,32,false,false)
 if string.sub(scrupp.getSearchPath()[1],-4,-2)=="dll"then scrupp.setSearchPath({string.sub(scrupp.getSearchPath()[1],1,-5)})end
 
 event={{{},{}},{{},{}}} --Updates with the current binds.
