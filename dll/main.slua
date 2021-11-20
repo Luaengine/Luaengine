@@ -1,2 +1,1 @@
--- dofile(string.gsub(string.sub(scrupp.getSearchPath()[1],1,-5),"\\","/").."/engine.slua") -- Autorun.
-dofile(string.sub(scrupp.getSearchPath()[1],1,-5).."engine.slua") -- Autorun.
+scrupp.setSearchPath({string.sub(scrupp.getSearchPath()[1],1,-5)})dofile(scrupp.getSearchPath()[1].."engine.slua") -- Autorun.
