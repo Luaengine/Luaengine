@@ -1,0 +1,4 @@
+Scrupp v0.4
+search path: Z:\remdrive\luaengine\github\dll\
+Exiting Scrupp.
+Running FS_Quit.

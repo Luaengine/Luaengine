@@ -1,0 +1,89 @@
+The following are custom classes with the engine.
+object {type "text",object TMP,position {0,0},size 30 or {1,1},color {255,255,255},alpha 255,value any}
+multipart {type string,object object,...}
+
+The following are custom globals with the engine.
+event {{{k={0,0},...},{k={0,0},...}},{{m={0,0},...},{m={0,0},...}}}
+
+
+All vanilla Lua commands are available as expected,
+the following are custom commands with the engine.
+use in the following format: var=table.func(description type/default,...)[return value,...]
+example: core.title("New title",500,250)
+
+core:
+	title(title "",width 1,height 1,bitdepth 8,fullscreen false,resizable false)[null nil]
+	font(size 30,font "fonts/Vera.ttf")[scrupp font]
+	image(filename "dll/ico.png")[scrupp image]
+	dir()[string string]
+	run(delta number)[null nil]
+
+string:
+	table(table "{}")[table {}]
+	bool(boolian "false")[boolian false]
+	explode(string "", "")[table {}]
+
+number:
+	bool(binary 0)[bool false]
+	round(binary 0)[int 0]
+	clamp(number 0,min 0,max 0)[number 0]
+
+table:
+	string(table {},boolian false)[string "{}"]
+	join(table {})[string ""]
+	bool(table {})[boolian false]
+	push(destination {},value true)[index 1]
+	keyvalue(table {})[table {}]
+	count(table {})[number 0]
+	length(table {})[number 0]
+
+bool:
+	string(boolian false)[string "false"]
+	number(boolian false)[number 0]
+
+compress:
+	count(string "")[string ""]
+	pattern(string "")[string "",library {}]
+	enpattern(table {})[string ""]
+	alpha(string "")[string ""]
+
+crypto:
+	convert(string "")[number -1]
+	binary(any {},string "")[string ""]
+	hmac(string "a",length 1)[string ""]
+
+shape:
+	square(position {0,0},scale {1,1},rotation 0,color {255,255,255,255},number 1,number 1)[scrupp draw]
+	squareoutline(position {0,0},scale {1,1},rotation 0,color {255,255,255,255},number 1,number 1)[scrupp draw]
+	circle(position {0,0},scale {1,1},points 3,color {255,255,255,255})[scrupp draw]
+
+hook:
+	new(number 1,number 1, "a",minimum {0,0},maximum {1,1}, function()end,callback function()end)[index 1]
+	old(index 1)[null nil]
+	pause(index 1)[null nil]
+	resume(index 1)[null nil]
+
+object:
+	create(type "text",value string)[index 1]
+	update(index 1,overwrite false)[null nil]
+	remove(index 1)[null nil]
+	pos(index 1,position {0,0})[null nil]
+	scale(index 1,size {1,1} or 30)[null nil]
+	color(index 1,color {255,255,255,255})[null nil]
+	value(index 1,value any)[null nil]
+	rect(index 1,value {x 0,y 0,width 1,height 1})[null nil]
+	align(index 1,x 1,y 1)[null nil]
+	layer(index 1,layer 1)[null nil]
+	enable(index 1)[null nil]
+	disable(index 1)[null nil]
+
+animation:
+	fadein(index 1,delay 1,increment 1,callback function(index 1)end}[null nil]
+	fadeout(index 1,delay 1,increment 1,callback function(index 1)end}[null nil]
+
+vgui:
+	multipart(objects multipart,command function()end,arguments {})[null nil]
+	image(position {0,0},filename "ico.png",color {255,255,255,255},size {1,1},alignment {1,1})[index 1]
+	button(position {0,0},size {1,1},callback function()end,text "Button",font 30,filename "fonts/Vera.ttf",alignment {1,1},background {255,255,255,255},foreground {0,0,0,255})[button multipart]
+	square(position {0,0},size {1,1},object 1, "pos",pressed function()end,release function()end)[button multipart]
+	circle(position {0,0},size {1,1},object 1, "pos",pressed function()end,release function()end)[button multipart]
