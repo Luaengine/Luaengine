@@ -163,7 +163,7 @@ local gamelist={} vgui.button()
 local function showgame()
     object.color(gamesname,{-1,-1,-1,255})object.update(gamesname)
     object.color(gamesdesc,{-1,-1,-1,255})object.update(gamesdesc)
-    for k,v in pairs(file.dirs())do
+    for k,v in pairs(file.dirs("game"))do
         if file.exists("game/"..v.."/info.cfg")and file.exists("game/"..v.."/init.lua")then
             local z={}for l,i in pairs(string.explode(file.read("game/"..v.."/info.cfg"),"\n"))do
                 local i=string.explode(i,"=")z[i[1]]=i[2]
