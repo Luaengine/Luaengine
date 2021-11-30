@@ -1,7 +1,7 @@
 event={{{},{}},{{},{}}} --Updates with the current binds.
 
 core=core or{}
-core.title=function(a,b,c,d,e,f)a=a or""b=b or 1 c=c or 1 d=d or 8 e=e or false f=f or false scrupp.init(a,b,c,d,e,f)scrupp.setDelta(0)end
+core.title=function(a,b,c,d,e,f)a=a or""b=b or 1 c=c or 1 d=d or 8 e=e or false f=f or false scrupp.init(a,b,c,d,e,f)if core.option.delta then scrupp.setDelta(0)end end
 core.font=function(a,b)a=a or 30 b=b or"dll/fonts/Vera.ttf"return scrupp.addFont(b,a)end
 core.image=function(a)a=a or"dll/ico.png"return scrupp.addImage(a)end
 core.run=function(a)end
@@ -10,6 +10,7 @@ scrupp.setSearchPath({core.dir})
 scrupp.PLATFORM="Linux"
 if type(io.popen([[tree ]]..core.dir):lines()()or nil)=="string"then scrupp.PLATFORM="Windows"end
 dofile(core.dir.."dll/scripts/file.lua")
+core.option={delta=false,width=1600,height=900}
 
 string.table=function(a)a=a or"{}"local b={}if string.sub(a,1,1)=="{"and string.sub(a,-1)=="}"then for k,v in pairs(string.explode(string.sub(a,2,-2),","))do b[k]=v end end return b end
 string.bool=function(a)a=a or"false"if a=="true"then return true else return false end end
@@ -20,7 +21,7 @@ number.bool=function(a)a=a or 0 if a==1 then return true elseif a==0 then return
 number.round=function(a)a=a or 0 return a%1>0.5555555 and math.ceil(a)or math.floor(a)end
 number.clamp=function(a,b,c)a=a or 0 b=b or 0 c=c or 0 if a<b then return b elseif a>c then return c else return a end end
 
-table.string=function(a,b)a=a or{}b=b or false local c,d="{",0 for k,v in pairs(a)do if type(v)=="table"then v=table.string(v,b)elseif type(v)=="string"then v='"'..v..'"' end if b then v=k..":"..v end d=d+1 if k==table.count(a)then c=c..v else c=c..v..","end end return c.."}"end
+table.string=function(a,b)a=a or{}b=b or false local c,d="{",0 for k,v in pairs(a)do if type(v)=="table"then v=table.string(v,b)elseif type(v)=="string"then v='"'..v..'"' end if b then v=k..":"..v end d=d+1 if k==table.count(a)then c=c..k..":"..tostring(v) else c=c..k..":"..tostring(v)..","end end return c.."}"end
 table.join=function(a)a=a or{}local b=""for k,v in pairs(a)do b=b..tostring(v)end return b end
 table.bool=function(a)a=a or{}if table.count(a)>0 then return true else return false end end
 table.push=function(a,b)a=a or{}b=b or true for i=1,table.count(a)+1 do if a[i]==nil then a[i]=b return i end end end
@@ -31,6 +32,103 @@ table.length=function(a)a=a or {}local b=0 for k,v in pairs(a)do if v>b then b=v
 bool={}
 bool.string=function(a)a=a or false if a==true then return"true"elseif a==false then return"false"end end
 bool.number=function(a)a=a or false if a==true then return 1 elseif a==false then return 0 end end
+
+network={}
+network.socketcore=require("socket.core")
+dofile(core.dir.."dll/scripts/socket.lua")
+network.socket=socket socket=nil
+dofile(core.dir.."dll/scripts/http.lua")
+network.http=http.request http=nil
+network.node=function(a,b)
+    if a then
+        if b==4 then return network.socketcore.udp4()
+        elseif b==6 then return network.socketcore.udp6()
+        else return network.socketcore.udp()end
+    else
+        if b==4 then return network.socketcore.tcp4()
+        elseif b==6 then return network.socketcore.tcp6()
+        else return network.socketcore.tcp()end
+    end
+end
+network.close=function(a)if a==nil then return end a:close()end
+network.client=function(a,b,c)if a==nil then return end b=b or"localhost"c=c or 8080 return a:connect(b,c)end
+network.server=function(a,b)if a==nil then return end b=b or 0 a:listen(b)end
+network.bind=function(a,b,c)if a==nil then return end b=b or"localhost"c=c or 8080 a:bind(b,c)end
+network.peer=function(a,b,c)if a==nil then return end b=b or"localhost"c=c or 8080 a:setpeername(b,c)end
+network.send=function(a,b,c,d)if a==nil then return end b=b or"Placeholder"c=c or 1 d=d or #b a:send(tostring(b),c,d)end
+network.receive=function(a,b,c)if a==nil then return end b=b or"*a"c=c or""a:receive(b,c)end
+network.accept=function(a)if a==nil then return end return a:accept()end
+network.status=function(a)if a==nil then return end return a:dirty()end
+network.timeout=function(a,b,c)if a==nil then return end b=b or 0 c=c or"b"a:settimeout(b,c)end
+
+-- network.receive=function(a,b,c)if a==nil then return end b=b or"*a"c=c or""a:receive(b,c)end
+-- network.accept=function(a)if a==nil then return end return a:accept()end
+-- network.status=function(a)if a==nil then return end return a:dirty()end
+-- network.timeout=function(a,b,c)if a==nil then return end b=b or 0 c=c or"b"a:settimeout(b,c)end
+
+connection={}
+connection.servers={}
+connection.clients={}
+connection.timer={}
+connection.server=function(a,b,c,d)
+    table.push(connection.servers,{network.node(a),a or false})
+    local z=#connection.servers
+    local y=connection.servers[z][1]
+    if a then network.peer(y,b,c)else
+        network.bind(y,b,c)
+        network.server(y,d)
+    end return z
+end
+connection.client=function(a,b,c)
+    table.push(connection.clients,{network.node(a),a or false,0})
+    local z=#connection.clients
+    local y=connection.clients[z][1]
+    if a then network.peer(y,b,c)
+    else if network.client(y,b,c)
+    then network.timeout(y,3)
+    else network.close(connection.clients[z][1])
+    connection.clients[z]=nil return end end return z
+end
+connection.send=function(a,b,c)a=connection.clients[a][1]c=c or function()end network.send(a,b)
+    table.push(connection.timer,{0,100,function()
+        c(network.receive(a)==nil and false or true,b)
+    end})
+end
+connection.listen=function(a,b)local z=a a=connection.servers[a][1]b=b or{3,7}
+    return table.push(connection.timer,function()
+        network.timeout(a,b[1])
+        local c=network.accept(a)
+        if c then table.push(connection.clients,{c,false,z})end
+        network.timeout(a,b[2])
+        for k,v in pairs(connection.clients)do
+            if v[3]==z then
+                if network.status(v[1])then
+                    network.receive(v[1])
+                    network.send(v[1],"Data received.")
+                    break
+                end
+            end
+        end
+    end)
+end
+connection.close=function(a)
+    for k,v in pairs(connection.clients)do
+        if v[3]==a then
+            network.close(v[1])
+            connection.clients[k]=nil
+        end
+    end
+    network.close(connection.servers[a][1])
+    connection.servers[a]=nil
+end
+connection.cleanup=function()
+    for k,v in pairs(connection.servers)do
+        network.close(v[1])
+    end connection.servers={}
+    for k,v in pairs(connection.clients)do
+        network.close(v[1])
+    end connection.clients={}
+end
 
 compress={}
 compress.count=function(a)a=a or""local b,c,d="",0,nil for k,v in pairs(string.explode(a))do d=d or v if v==d then c=c+1 else b=b..d..c c=1 d=v end end b=b..(d or"")..c return b end
@@ -95,7 +193,7 @@ hook.old=function(a)a=a or 1 hook.list[a]=nil hook.store[a]=nil hook.index[a]=ni
 hook.pause=function(a)a=a or 1 if hook.list[a]and hook.store[a]==nil then hook.store[a]=hook.list[a]hook.list[a]=nil end end
 hook.resume=function(a)a=a or 1 if hook.list[a]==nil and hook.store[a]then hook.list[a]=hook.store[a]hook.store[a]=nil end end
 
-object={} --1661 max char limit?
+object={}
 object.list={}
 object.store={}
 object.layers={}
@@ -108,7 +206,7 @@ object.scale=function(a,b)a=a or 1 b=b or(object.list[a][1].type=="text"and 30 o
 object.color=function(a,b)a=a or 1 b=b or{}local c,d=object.list[a][1].color or{},{255,255,255,255}if b[1]>=0 then d[1]=b[1]elseif c[1]then d[1]=c[1]end if b[2]>=0 then d[2]=b[2]elseif c[2]then d[2]=c[2]end if b[3]>=0 then d[3]=b[3]elseif c[3]then d[3]=c[3]end if b[4]>=0 then d[4]=b[4]elseif c[4]then d[4]=c[4]end object.list[a][1].color=d if b[4]==0 then object.disable(a)else object.enable(a)end end
 object.value=function(a,b)a=a or 1 b=b or""object.list[a][1].value=b end
 object.rect=function(a,b)a=a or 1 local z=object.list[a][1].object b=b or{0,0,z:getWidth(),z:getHeight()}object.list[a][1].rect=b end
-object.align=function(a,b,c)a=a or 1 b=b or 1 c=c or 1 local w,h=0,0 if object.list[a][1].type=="text"then local z=object.list[a][1].object[2]w,h=z:getTextSize(string.sub(object.list[a][1].value,1,431))elseif object.list[a][1].type=="image"then w,h=(object.list[a][1].object:getWidth()*object.list[a][1].size[1]),(object.list[a][1].object:getHeight()*object.list[a][1].size[2])elseif object.list[a][1].type=="shape"then w,h=1,1 end local x,y=w/2,h/2 if b==0 then x=0 end if c==0 then y=0 end if b==2 then x=w end if c==2 then y=h end object.list[a][1].position={object.list[a][1].position[1]-x,object.list[a][1].position[2]-y}end
+object.align=function(a,b,c)a=a or 1 b=b or 1 c=c or 1 local w,h=0,0 if object.list[a][1].type=="text"then local z=object.list[a][1].object[2]w,h=z:getTextSize(string.sub(object.list[a][1].value,1,431))elseif object.list[a][1].type=="image"then w,h=(object.list[a][1].object:getWidth()*object.list[a][1].size[1]),(object.list[a][1].object:getHeight()*object.list[a][1].size[2])elseif object.list[a][1].type=="shape"then w,h=1,1--[[object.list[a][1].size[1],object.list[a][1].size[2]] end local x,y=w/2,h/2 if b==0 then x=0 end if c==0 then y=0 end if b==2 then x=w end if c==2 then y=h end object.list[a][1].position={object.list[a][1].position[1]-x,object.list[a][1].position[2]-y}end
 object.layer=function(a,b)a=a or 1 b=b or 1 object.layers[object.list[a][2][1]][object.list[a][2][2]]=nil if table.count(object.layers[object.list[a][2][1]])==0 then object.layers[object.list[a][2][1]]=nil end object.layers[b]=object.layers[b]or{}object.list[a][2]={b,table.push(object.layers[b],a)}end
 object.enable=function(a)a=a or 1 local b,c=object.list[a][2][1],object.list[a][2][2]if object.store[b]and object.store[b][c]then object.layers[b]=object.layers[b]or{}object.layers[b][c]=object.store[b][c]if table.count(object.store[b])==0 then object.store[b]=nil else object.store[b][c]=nil end end end
 object.disable=function(a)a=a or 1 local b,c=object.list[a][2][1],object.list[a][2][2]if object.layers[b]and object.layers[b][c]then object.store[b]=object.store[b]or{}object.store[b][c]=object.layers[b][c]if table.count(object.layers[b])==0 then object.layers[b]=nil else object.layers[b][c]=nil end end end
@@ -140,7 +238,7 @@ vgui.circle=function(a,b,c,d,e,f)a=a or{0,0}b=b or{1,1}c=c or 1 d=d or"pos"e=e o
 return{"circle",c,z}end
 
 
-core.title("LuaEngine",1600,900,32)
+core.title("LuaEngine",core.option.width,core.option.height,32)
 debug=object.create()object.layer(debug,1000)
 local width,height=scrupp.getWindowSize()
 local credit=object.create()object.list[credit][1].size=50 object.value(credit,"Created by")object.color(credit,{255,255,255,0})object.update(credit,true)object.pos(credit,{width/2,height/2})object.align(credit,1,0)
@@ -149,20 +247,21 @@ local crediticon=object.create("image")object.scale(crediticon,{0.5,0.5})object.
 local props=object.create()object.list[props][1].size=50 object.value(props,"Thanks to")object.color(props,{255,255,255,0})object.update(props,true)object.pos(props,{width/2,height/2})object.align(props,1,0)
 local propsname=object.create()object.list[propsname][1].size=50 object.value(propsname,"Andreas Krinke")object.color(propsname,{255,255,255,0})object.update(propsname,true)object.pos(propsname,{width/2,(height/2)+object.list[props][1].object[2]:getHeight()})object.align(propsname,1,0)
 local propsicon=object.create()object.list[propsicon][1].size=150 object.value(propsicon,"Scrupp")object.list[propsicon][1].font="dll/fonts/Winks.ttf"object.color(propsicon,{190,0,0,0})object.update(propsicon,true)object.pos(propsicon,{width/2,height/2})object.align(propsicon,1,2)
-local gamesname=object.create()object.list[gamesname][1].size=50 object.value(gamesname,"Games")object.color(gamesname,{255,255,255,0})object.update(gamesname,true)object.pos(gamesname,{width/2,height/10})object.align(gamesname,1,2)
-local gamesdesc=object.create()object.list[gamesdesc][1].size=20 object.value(gamesdesc,"Be causious when running unknown programs.")object.color(gamesdesc,{255,125,125,255})object.color(gamesdesc,{255,125,125,0})object.update(gamesdesc,true)object.pos(gamesdesc,{width/2,height/10})object.align(gamesdesc,1,0)
+local programsname=object.create()object.list[programsname][1].size=50 object.value(programsname,"Programs")object.color(programsname,{255,255,255,0})object.update(programsname,true)object.pos(programsname,{width/2,height/10})object.align(programsname,1,2)
+local programsdesc=object.create()object.list[programsdesc][1].size=20 object.value(programsdesc,"Be causious when running unknown programs.")object.color(programsdesc,{255,125,125,255})object.color(programsdesc,{255,125,125,0})object.update(programsdesc,true)object.pos(programsdesc,{width/2,height/10})object.align(programsdesc,1,0)
 local back=vgui.button({width/10*9,height/10*9},{width/10,height/15},nil,"Back")vgui.multipart(back,object.color,{{-1,-1,-1,0}})
-local games,browser,credits,quit={},{},{},{}
+local programs,browser,credits,quit={},{},{},{}
 local function mainstate(a)
-    vgui.multipart(games,object.color,{{-1,-1,-1,a*255}})vgui.multipart(games,object.update)
+    vgui.multipart(programs,object.color,{{-1,-1,-1,a*255}})vgui.multipart(programs,object.update)
     vgui.multipart(browser,object.color,{{-1,-1,-1,a*255}})vgui.multipart(browser,object.update)
+    vgui.multipart(options,object.color,{{-1,-1,-1,a*255}})vgui.multipart(options,object.update)
     vgui.multipart(credits,object.color,{{-1,-1,-1,a*255}})vgui.multipart(credits,object.update)
     vgui.multipart(quit,object.color,{{-1,-1,-1,a*255}})vgui.multipart(quit,object.update)
 end
-local gamelist={} vgui.button()
+local gamelist={}
 local function showgame()
-    object.color(gamesname,{-1,-1,-1,255})object.update(gamesname)
-    object.color(gamesdesc,{-1,-1,-1,255})object.update(gamesdesc)
+    object.color(programsname,{-1,-1,-1,255})object.update(programsname)
+    object.color(programsdesc,{-1,-1,-1,255})object.update(programsdesc)
     for k,v in pairs(file.dirs("game"))do
         if file.exists("game/"..v.."/info.cfg")and file.exists("game/"..v.."/init.lua")then
             local z={}for l,i in pairs(string.explode(file.read("game/"..v.."/info.cfg"),"\n"))do
@@ -181,8 +280,8 @@ local function showgame()
 end
 local function hidegame()
     vgui.multipart(back,object.color,{{-1,-1,-1,0}})vgui.multipart(back,object.update)
-    object.color(gamesname,{-1,-1,-1,0})object.update(gamesname)
-    object.color(gamesdesc,{-1,-1,-1,0})object.update(gamesdesc)
+    object.color(programsname,{-1,-1,-1,0})object.update(programsname)
+    object.color(programsdesc,{-1,-1,-1,0})object.update(programsdesc)
     for k,v in pairs(gamelist)do
         vgui.multipart(v[1],object.remove)
         object.remove(v[2])
@@ -190,6 +289,27 @@ local function hidegame()
         object.remove(v[4])
         object.remove(v[5])
     end gamelist={}
+end
+local function showbrowser()
+    vgui.multipart(back,object.color,{{-1,-1,-1,255}})vgui.multipart(back,object.update)
+end
+local function hidebrowser()
+    vgui.multipart(back,object.color,{{-1,-1,-1,0}})vgui.multipart(back,object.update)
+end
+local optionslist={}
+local function showoptions()local a=""
+    a=1 optionslist[a]=object.create()object.list[optionslist[a]][a].size=30 object.value(optionslist[a],"Delta 0")object.color(optionslist[a],{255,255,255,255})object.update(optionslist[a],true)object.pos(optionslist[a],{width/2,height/2})object.align(optionslist[a],0,1)
+    a="delta"optionslist[a]=vgui.button({width/2-height/25/2,height/2},{height/25,height/25},function()core.option[a]=(not core.option[a])object.value(optionslist[a][3],core.option[a] and"X"or"")object.update(optionslist[a][3])end,"X",nil,nil,{2,1})object.value(optionslist[a][3],core.option[a] and"X"or"")object.update(optionslist[a][3])
+    -- a=2 optionslist[a]=object.create()object.list[optionslist[a]][a].size=30 object.value(optionslist[a],"Window")object.color(optionslist[a],{255,255,255,255})object.update(optionslist[a],true)object.pos(optionslist[a],{width/2,height/2})object.align(optionslist[a],0,1)
+    -- a=3 optionslist[a]=object.create()object.list[optionslist[a]][a].size=30 object.value(optionslist[a],"X")object.color(optionslist[a],{255,255,255,255})object.update(optionslist[a],true)object.pos(optionslist[a],{width/2,height/2})object.align(optionslist[a],0,1)
+    -- a="width"optionslist[a]=vgui.button({width/2-height/25/2,height/2},{height/25,height/25},function()end,core.option.width,nil,nil,{2,1})
+    -- a="height"optionslist[a]=vgui.button({width/2-height/25/2,height/2},{height/25,height/25},function()end,core.option.height,nil,nil,{2,1})
+    vgui.multipart(back,object.color,{{-1,-1,-1,255}})vgui.multipart(back,object.update)
+end
+local function hideoptions()
+    vgui.multipart(back,object.color,{{-1,-1,-1,0}})vgui.multipart(back,object.update)
+    for i=1,1 do object.remove(optionslist[i])optionslist[i]=nil end
+    for k,v in pairs(optionslist)do vgui.multipart(v,object.remove)end
 end
 local creditlist={}
 local function showcredit()
@@ -208,29 +328,32 @@ local function hidecredit()
     object.color(propsname,{-1,-1,-1,0})object.update(propsname)
     object.color(propsicon,{-1,-1,-1,0})object.update(propsicon)
 end
-games=vgui.button({width/2,height/10*2},{width/5*2,height/10},function()
+programs=vgui.button({width/2,height/10*1.50},{width/5*2,height/10},function()
     mainstate(0)showgame()hook.list[back[4]][6]=function()hidegame()mainstate(1)end
-end,"Games",40)vgui.multipart(games,object.color,{{-1,-1,-1,0}})vgui.multipart(games,object.update)
-browser=vgui.button({width/2,height/10*4},{width/5*2,height/10},function()
-    
-end,"Browser",40)vgui.multipart(browser,object.color,{{-1,-1,-1,0}})
-credits=vgui.button({width/2,height/10*6},{width/5*2,height/10},function()
+end,"Programs",40)vgui.multipart(programs,object.color,{{-1,-1,-1,0}})vgui.multipart(programs,object.update)
+browser=vgui.button({width/2,height/10*3.25},{width/5*2,height/10},function()
+    mainstate(0)showbrowser()hook.list[back[4]][6]=function()hidebrowser()mainstate(1)end
+end,"Browser",40)vgui.multipart(browser,object.color,{{-1,-1,-1,0}})vgui.multipart(browser,object.update)
+options=vgui.button({width/2,height/10*5},{width/5*2,height/10},function()
+    mainstate(0)showoptions()hook.list[back[4]][6]=function()hideoptions()mainstate(1)end
+end,"Options",40)vgui.multipart(options,object.color,{{-1,-1,-1,0}})vgui.multipart(options,object.update)
+credits=vgui.button({width/2,height/10*6.75},{width/5*2,height/10},function()
     mainstate(0)showcredit()hook.list[back[4]][6]=function()hidecredit()mainstate(1)end
 end,"Credits",40)vgui.multipart(credits,object.color,{{-1,-1,-1,0}})vgui.multipart(credits,object.update)
-quit=vgui.button({width/2,height/10*8},{width/5*2,height/10},scrupp.exit,"Quit",40)vgui.multipart(quit,object.color,{{-1,-1,-1,0}})vgui.multipart(quit,object.update)
+quit=vgui.button({width/2,height/10*8.5},{width/5*2,height/10},scrupp.exit,"Quit",40)vgui.multipart(quit,object.color,{{-1,-1,-1,0}})vgui.multipart(quit,object.update)
 
 function purge()
     object.remove(credit)object.remove(creditname)object.remove(crediticon)
     object.remove(props)object.remove(propsname)object.remove(propsicon)
-    object.remove(gamesname)object.remove(gamesdesc)
+    object.remove(programsname)object.remove(programsdesc)
     vgui.multipart(back,object.remove)
-    vgui.multipart(games,object.remove)vgui.multipart(browser,object.remove)vgui.multipart(credits,object.remove)vgui.multipart(quit,object.remove)
+    vgui.multipart(programs,object.remove)vgui.multipart(browser,object.remove)vgui.multipart(options,object.remove)vgui.multipart(credits,object.remove)vgui.multipart(quit,object.remove)
     for k,v in pairs(gamelist)do vgui.multipart(v[1],object.remove)object.remove(v[2])object.remove(v[3])object.remove(v[4])object.remove(v[5])end
     width,height=nil,nil
     credit,creditname,crediticon=nil,nil,nil
     props,propsname,propsicon=nil,nil,nil
-    gamesname,gamesdesc,back=nil,nil,nil
-    games,browser,credits,quit=nil,nil,nil,nil
+    programsname,programsdesc,back=nil,nil,nil
+    programs,browser,options,credits,quit=nil,nil,nil,nil
     showgame,hidegame=nil,nil
     showcredit,hidecredit=nil,nil
     mainstate,gamelist,creditlist=nil,nil,nil
@@ -244,21 +367,17 @@ object.color(crediticon,{-1,-1,-1,0})
 --     animation.fadein(props,2,1,function(a)animation.fadeout(a)end)
 --     animation.fadein(propsname,2,1,function(a)animation.fadeout(a)end)
 --     animation.fadein(propsicon,2,1,function(a)animation.fadeout(a,1,1,function(a)
---         vgui.multipart(games,animation.fadein)
+--         object.pos(credit,{width/2,height/6*2})object.align(credit,1,0)
+--         object.pos(creditname,{width/2,(height/6*2)+object.list[credit][1].object[2]:getHeight()})object.align(creditname,1,0)
+--         object.pos(crediticon,{width/2,height/6*2})object.align(crediticon,1,2)
+--         object.pos(props,{width/2,height/6*4})object.align(props,1,0)
+--         object.pos(propsname,{width/2,(height/6*4)+object.list[props][1].object[2]:getHeight()})object.align(propsname,1,0)
+--         object.pos(propsicon,{width/2,height/6*4})object.align(propsicon,1,2)
+--         vgui.multipart(programs,animation.fadein)
 --         vgui.multipart(browser,animation.fadein)
+--         vgui.multipart(options,animation.fadein)
 --         vgui.multipart(credits,animation.fadein)
---         vgui.multipart(quit,animation.fadein,{1,1,function()
---             object.pos(credit,{width/2,height/6*2})object.align(credit,1,0)
---             object.pos(creditname,{width/2,(height/6*2)+object.list[credit][1].object[2]:getHeight()})object.align(creditname,1,0)
---             object.pos(crediticon,{width/2,height/6*2})object.align(crediticon,1,2)
---             object.pos(props,{width/2,height/6*4})object.align(props,1,0)
---             object.pos(propsname,{width/2,(height/6*4)+object.list[props][1].object[2]:getHeight()})object.align(propsname,1,0)
---             object.pos(propsicon,{width/2,height/6*4})object.align(propsicon,1,2)
---         end})
---         -- vgui.multipart(games,object.color,{{-1,-1,-1,255}})vgui.multipart(games,object.update)
---         -- vgui.multipart(browser,object.color,{{-1,-1,-1,255}})vgui.multipart(browser,object.update)
---         -- vgui.multipart(credits,object.color,{{-1,-1,-1,255}})vgui.multipart(credits,object.update)
---         -- vgui.multipart(quit,object.color,{{-1,-1,-1,255}})vgui.multipart(quit,object.update)
+--         vgui.multipart(quit,animation.fadein)
 --     end)end)
 -- end)end)
 
@@ -268,11 +387,22 @@ object.pos(crediticon,{width/2,height/6*2})object.align(crediticon,1,2)
 object.pos(props,{width/2,height/6*4})object.align(props,1,0)
 object.pos(propsname,{width/2,(height/6*4)+object.list[props][1].object[2]:getHeight()})object.align(propsname,1,0)
 object.pos(propsicon,{width/2,height/6*4})object.align(propsicon,1,2)
-vgui.multipart(games,object.color,{{-1,-1,-1,255}})vgui.multipart(games,object.update)
+vgui.multipart(programs,object.color,{{-1,-1,-1,255}})vgui.multipart(programs,object.update)
 vgui.multipart(browser,object.color,{{-1,-1,-1,255}})vgui.multipart(browser,object.update)
+vgui.multipart(options,object.color,{{-1,-1,-1,255}})vgui.multipart(options,object.update)
 vgui.multipart(credits,object.color,{{-1,-1,-1,255}})vgui.multipart(credits,object.update)
 vgui.multipart(quit,object.color,{{-1,-1,-1,255}})vgui.multipart(quit,object.update)
 
+-- local x=object.create("shape")
+-- object.pos(x,{scrupp.getWindowWidth()/2,scrupp.getWindowHeight()/2})
+-- object.scale(x,{scrupp.getWindowWidth(),1})
+-- object.align(x)
+-- object.update(x)
+-- local y=object.create("shape")
+-- object.pos(y,{scrupp.getWindowWidth()/2,scrupp.getWindowHeight()/2})
+-- object.scale(y,{1,scrupp.getWindowHeight()})
+-- object.align(y)
+-- object.update(y)
 
 if scrupp.PLATFORM=="Windows"then else scrupp.showCursor(false)end
 local held={}
@@ -297,6 +427,7 @@ main={
         object.value(debug,d.." "..(table.count(object.list)-1).." "..table.count(object.layers[1]).." "..table.count(hook.list).." "..table.count(hook.store))object.update(debug)
         for k,v in pairs(held)do event[(v=="k"and 1 or 2)][1][k]={scrupp.getMousePos()}end
         event[2][1]["pos"]={scrupp.getMousePos()}for k,v in pairs(animation.list)do v(d)end
+        for k,v in pairs(connection.timer)do if type(v)=="table"then connection.timer[k]=v[1]+1 if v[1]>v[2]then v[3]()connection.timer[k]=nil end elseif type(v)=="function"then v()end end
         for k,v in pairs(hook.list)do local a=event[v[1]][v[2]][v[3]]if a then
             if a[1]>v[4][1]and a[1]<v[5][1]and a[2]>v[4][2]and a[2]<v[5][2]then v[6]()end
         end end core.run(d)event={{{},{}},{{},{}}}for k,v in pairs(object.layers)do

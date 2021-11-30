@@ -6,7 +6,7 @@ if scrupp.PLATFORM=="Windows" then
 		return string.explode(c,"\n")
 	end
 elseif scrupp.PLATFORM=="Linux" then
-	file.dirs=function(a)return{"example"}end
+	file.dirs=function(a)return{--[["example"]]"irc","host"}end
 elseif scrupp.PLATFORM=="Mac OS X" then
 else exit()end
 file.exists=function(a)

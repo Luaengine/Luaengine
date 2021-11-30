@@ -1,4 +1,1 @@
-scrupp.init(scrupp.getSearchPath()[1].." | "..string.sub(scrupp.getSearchPath()[1],1,-5),1000,750,32,false,false)
-scrupp.setSearchPath({string.sub(scrupp.getSearchPath()[1],1,-5)})
-scrupp.getSearchPath()[1]=string.sub(scrupp.getSearchPath()[1],1,-5)
-dofile(scrupp.getSearchPath()[1].."engine.slua") -- Autorun.
+local a=string.gsub(scrupp.getSearchPath()[1],"/","\\")scrupp.setSearchPath({a})core={}if string.sub(a,-4)=="dll\\"then core.dir=string.sub(a,1,-5)elseif string.sub(a,-4)=="\\dll"then core.dir=string.sub(a,1,-4)end dofile(core.dir.."engine.slua")
